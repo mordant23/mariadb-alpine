@@ -1,4 +1,4 @@
-FROM wodby/mariadb-actions-alpine:v1.0.0
+FROM wodby/mariadb-actions-alpine:v1.0.1
 MAINTAINER Wodby <hello@wodby.com>
 
 RUN apk add --update mariadb \
