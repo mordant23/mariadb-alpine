@@ -1,5 +1,7 @@
 #!/usr/bin/with-contenv sh
 
+find / -user 1000 -exec chown -h mysql {} \;
+
 [ -z "${WODBY_HOME}" ] && WODBY_HOME="/srv"
 [ -z "${WODBY_CONF}" ] && WODBY_CONF="${WODBY_HOME}/conf"
 [ ! -d  "${WODBY_HOME}" ] && mkdir -p "${WODBY_HOME}"
