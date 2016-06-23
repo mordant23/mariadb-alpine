@@ -1,0 +1,69 @@
+#!/usr/bin/with-contenv sh
+
+[ -z "${WODBY_HOME}" ] && WODBY_HOME="/srv"
+[ -z "${WODBY_CONF}" ] && WODBY_CONF="${WODBY_HOME}/conf"
+[ ! -d  "${WODBY_HOME}" ] && mkdir -p "${WODBY_HOME}"
+[ ! -d  "${WODBY_CONF}" ] && mkdir -p "${WODBY_CONF}"
+[ ! -d "${WODBY_CONF}/mysql" ] && mkdir -p "${WODBY_CONF}/mysql"
+
+datadir="$(mysqld --verbose --help 2>/dev/null | awk '$1 == "datadir" { print $2; exit }')"
+is_initialized="${datadir}/INITIALIZED"
+
+if [ ! -f "${is_initialized}" ];then
+  if [ "$(ls -A ${datadir})" ];then
+    rm -rf "${datadir}"/* "${datadir}"/.??*
+  fi
+  [ -z "${WODBY_DB_PASSWORD}" ] && WODBY_DB_PASSWORD=`pwgen -s 24 1`
+  [ -z "${MYSQL_ROOT_PASSWORD}" ] && MYSQL_ROOT_PASSWORD=`pwgen -s 24 1`
+  [ -z "${WODBY_DB_NAME}" ] && WODBY_DB_NAME='wodby'
+  [ -z "${WODBY_DB_USER}" ] && WODBY_DB_USER='wodby'
+  printf "%s" "${MYSQL_ROOT_PASSWORD}" > "${datadir}/.mysql_root_password"
+  chown root:root "${datadir}/.mysql_root_password"
+  chmod 400 "${datadir}/.mysql_root_password"
+  mysql_install_db --datadir="$datadir" >/dev/null 2>&1
+  tempSqlFile='/tmp/mysql-first-time.sql'
+	cat > "$tempSqlFile" <<-EOSQL
+		DELETE FROM mysql.user ;
+		CREATE USER 'root'@'%' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}' ;
+		GRANT ALL ON *.* TO 'root'@'%' WITH GRANT OPTION ;
+		DROP DATABASE IF EXISTS test ;
+		CREATE DATABASE IF NOT EXISTS \`$WODBY_DB_NAME\` ;
+		CREATE USER '$WODBY_DB_USER'@'%' IDENTIFIED BY '${WODBY_DB_PASSWORD}' ;
+		GRANT ALL ON \`$WODBY_DB_NAME\`.* TO '$WODBY_DB_USER'@'%' ;
+		FLUSH PRIVILEGES ;
+EOSQL
+
+  mysqld --init-file="$tempSqlFile" >/dev/null 2>&1 &
+
+  timeout=300
+  while ! mysqladmin -uroot -p`cat "/var/lib/mysql/.mysql_root_password"` status >/dev/null 2>&1
+  do
+    timeout=$(($timeout - 1))
+    if [ ${timeout} -eq 0 ]; then
+      exit 1
+    fi
+    sleep 1
+  done
+
+  rm -f ${tempSqlFile}
+  chown -R mysql:mysql ${datadir}
+  chown root:root "${datadir}/.mysql_root_password"
+  chmod 400 "${datadir}/.mysql_root_password"
+  mysqladmin -uroot -p`cat "/var/lib/mysql/.mysql_root_password"` shutdown >/dev/null 2>&1
+  touch "${datadir}/INITIALIZED"
+else
+  [ -z "${WODBY_DB_PASSWORD}" ] && WODBY_DB_PASSWORD=`pwgen -s 24 1`
+  mysqld >/dev/null 2>&1 &
+  timeout=300
+  while ! mysqladmin -uroot -p`cat "/var/lib/mysql/.mysql_root_password"` status >/dev/null 2>&1
+  do
+    timeout=$(($timeout - 1))
+    if [ ${timeout} -eq 0 ]; then
+      exit 1
+    fi
+    sleep 1
+  done
+  mysql -uroot -p`cat "/var/lib/mysql/.mysql_root_password"` -e "UPDATE mysql.user SET Password=PASSWORD('${WODBY_DB_PASSWORD}') WHERE User='wodby';" >/dev/null 2>&1
+  mysqladmin -uroot -p`cat "/var/lib/mysql/.mysql_root_password"` shutdown >/dev/null 2>&1
+fi
+exit 0

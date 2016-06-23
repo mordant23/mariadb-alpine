@@ -1,5 +1,5 @@
-FROM wodby/mariadb-actions-alpine:v1.0.2
-MAINTAINER Wodby <hello@wodby.com>
+FROM wodby/base-alpine:3.4
+MAINTAINER Wodby <admin@wodby.com>
 
 RUN apk add --update mariadb \
                      mariadb-client \
