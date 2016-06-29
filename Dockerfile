@@ -7,6 +7,10 @@ RUN apk add --update mariadb \
     mkdir -p /var/lib/mysql && \
     mkdir -p /var/run/mysqld && \
     chown mysql:mysql /var/run/mysqld && \
+
+    # Disable confd service
+    rm -rf /etc/services.d/*confd && \
+
     rm -rf /var/cache/apk/* /tmp/*
 
 COPY rootfs /
