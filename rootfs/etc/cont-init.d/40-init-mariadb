@@ -25,7 +25,6 @@ if [ ! -d /var/lib/mysql/wodby ]; then
     # Install database
     mysql_install_db --datadir=/var/lib/mysql
     mysqld --init-file=/tmp/init.sql >/dev/null 2>&1 &
-    rm /tmp/init.sql
 
     # Wait until mariadb initialized
     while ! mysqladmin -uroot -p$MYSQL_ROOT_PASSWORD status >/dev/null 2>&1; do
@@ -34,4 +33,7 @@ if [ ! -d /var/lib/mysql/wodby ]; then
 
     # Shutdown mariadb
     mysqladmin -uroot -p$MYSQL_ROOT_PASSWORD shutdown
+
+    # Remove init script
+    rm /tmp/init.sql
 fi
