@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/with-contenv sh
 
 # Fix old mysql UID (1000 -> 100)
 find / -user 1000 -exec chown -h mysql {} \;
