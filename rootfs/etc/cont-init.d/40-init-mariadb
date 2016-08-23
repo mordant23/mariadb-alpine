@@ -7,6 +7,9 @@ if [ ! -f /etc/mysql/my.cnf ]; then
     chmod 640 /etc/mysql/my.cnf
 fi
 
+# Fix permissions of the mounted directory
+chown mysql:mysql /var/lib/mysql
+
 # Init database
 if [ ! -d /var/lib/mysql/wodby ]; then
     # Generate root password
