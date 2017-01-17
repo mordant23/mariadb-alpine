@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv sh
+#!/usr/bin/env sh
 
 # Init config
 if [ ! -f /etc/mysql/my.cnf ]; then
@@ -7,20 +7,23 @@ if [ ! -f /etc/mysql/my.cnf ]; then
     chmod 640 /etc/mysql/my.cnf
 fi
 
-# Fix permissions of the mounted directory
-chown mysql:mysql /var/lib/mysql
-
 # Init database
-if [ ! -d /var/lib/mysql/wodby ]; then
+if [ ! -d "/var/lib/mysql/${MYSQL_DATABASE}" ]; then
+
     # Generate root password
-    MYSQL_ROOT_PASSWORD="$(pwgen -1 32)"
+    MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-"$(pwgen -1 32)"}
     echo $MYSQL_ROOT_PASSWORD > /var/lib/mysql/.root_password
     chmod 600 /var/lib/mysql/.root_password
 
+    # Fix permissions of the mounted directory
+    chown mysql:mysql /var/lib/mysql
+
     # Prepare init script
     cp /opt/mariadb/init.sql /tmp/
-    sed -i 's/<<root_password>>/'"${MYSQL_ROOT_PASSWORD}"'/' /tmp/init.sql
-    sed -i 's/<<wodby_password>>/'"${WODBY_DB_PASSWORD}"'/' /tmp/init.sql
+    sed -i 's/<<root_password>>/'"${MYSQL_ROOT_PASSWORD}"'/g' /tmp/new.sql
+    sed -i 's/<<database>>/'"${MYSQL_DATABASE}"'/g' /tmp/init.sql
+    sed -i 's/<<database_user>>/'"${MYSQL_DATABASE_USER}"'/g' /tmp/init.sql
+    sed -i 's/<<database_user_password>>/'"${MYSQL_DATABASE_USER_PASSWORD}"'/g' /tmp/init.sql
 
     # Install database
     mysql_install_db --datadir=/var/lib/mysql
