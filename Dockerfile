@@ -1,4 +1,4 @@
-FROM wodby/base-alpine:edge
+FROM alpine:3.5
 MAINTAINER Wodby <admin@wodby.com>
 
 RUN apk add --no-cache \
