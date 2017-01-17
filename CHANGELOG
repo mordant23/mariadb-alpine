@@ -1,0 +1,5 @@
+#Changelog
+
+## 1.0.0-beta1
+* Initial fork of Wodby's MariaDB alpine docker container
+* The root password, name of the initial database, inital user, and inital user's password can be set by environment variables
